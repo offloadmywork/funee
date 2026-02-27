@@ -2,7 +2,8 @@
  * Debug: Check if closure macro captures references correctly
  */
 
-import { closure, log } from "funee";
+import { log } from "host://console";
+import { closure } from "funee";
 import { add } from "./math.ts";
 
 // Just capture, don't execute

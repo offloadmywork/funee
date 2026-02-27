@@ -5,14 +5,10 @@
  * async iterables, and generates a formatted report.
  */
 
-import {
-  httpGetJSON,
-  log,
-  map,
-  toArray,
-  fromArray,
-  writeFile,
-} from "funee";
+import { log } from "host://console";
+import { httpGetJSON } from "host://http";
+import { writeFile } from "host://fs";
+import { map, toArray, fromArray } from "funee";
 
 // Types
 type GithubRepo = {

@@ -8,14 +8,8 @@
  * The references Map still tells the watcher which files matter.
  */
 
-import {
-  scenario,
-  runScenarios,
-  assertThat,
-  is,
-  log,
-  Closure,
-} from "funee";
+import { log } from "host://console";
+import { scenario, runScenarios, assertThat, is, Closure } from "funee";
 
 import { add, multiply } from "./math.ts";
 

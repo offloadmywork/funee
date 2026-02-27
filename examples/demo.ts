@@ -2,16 +2,9 @@
  * 🎸 Funee Capabilities Demo
  */
 
-import {
-  log,
-  writeFile,
-  readFile,
-  isFile,
-  assertThat,
-  is,
-  cryptoRandomString,
-  tmpdir,
-} from "funee";
+import { log } from "host://console";
+import { writeFile, readFile, isFile, tmpdir } from "host://fs";
+import { assertThat, is, cryptoRandomString } from "funee";
 
 export default async () => {
   // ═══════════════════════════════════════════════════════════════

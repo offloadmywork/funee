@@ -5,14 +5,8 @@
  * assertion library.
  */
 
-import {
-  scenario,
-  runScenarios,
-  assertThat,
-  is,
-  log,
-  Closure,
-} from "funee";
+import { log } from "host://console";
+import { scenario, runScenarios, assertThat, is, Closure } from "funee";
 
 // Helper to create inline closures
 const verify = <T>(fn: T): Closure<T> => ({

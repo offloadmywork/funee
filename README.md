@@ -8,6 +8,7 @@ funee is a TypeScript runtime designed for functional programming. It bundles an
 
 - **Compile-time macros** — Transform code at bundle time, not runtime
 - **HTTP imports** — Import directly from URLs (like Deno)
+- **Host imports (`host://`)** — Explicit host-provided capabilities
 - **Declaration-level tree-shaking** — Only include what's actually used
 - **Full runtime** — HTTP server, fetch, filesystem, subprocess, timers
 - **`using` keyword support** — TypeScript 5.2+ explicit resource management
@@ -26,7 +27,7 @@ cargo build --release
 
 ```typescript
 // hello.ts
-import { log } from "funee";
+import { log } from "host://console";
 
 export default () => {
   log("Hello, funee!");
@@ -63,7 +64,7 @@ funee --reload main.ts
 Create web servers with automatic resource cleanup:
 
 ```typescript
-import { serve, createResponse, createJsonResponse } from "funee";
+import { serve, createResponse, createJsonResponse } from "host://http/server";
 
 export default async () => {
   await using server = serve({
@@ -86,7 +87,7 @@ export default async () => {
 Web-standard fetch with full Response/Headers support:
 
 ```typescript
-import { fetch } from "funee";
+import { fetch } from "host://http";
 
 export default async () => {
   const res = await fetch("https://api.github.com/users/octocat");
@@ -100,7 +101,8 @@ export default async () => {
 Transform code at bundle time with full AST access:
 
 ```typescript
-import { closure, Closure, log } from "funee";
+import { closure, Closure } from "funee";
+import { log } from "host://console";
 
 // closure macro captures the expression as AST
 const add = closure((a: number, b: number) => a + b);
@@ -137,7 +139,7 @@ export default () => add(1, 2);
 ### File System
 
 ```typescript
-import { readFile, writeFile, isFile, readdir, tempDir } from "funee";
+import { readFile, writeFile, isFile, readdir, tempDir } from "host://fs";
 
 export default async () => {
   // Disposable temp directory (auto-deletes on scope exit)
@@ -154,7 +156,7 @@ export default async () => {
 ### Subprocess
 
 ```typescript
-import { spawn } from "funee";
+import { spawn } from "host://process";
 
 export default async () => {
   // Simple form — run and capture output
@@ -178,6 +180,8 @@ export default async () => {
 ### Timers
 
 ```typescript
+import { setTimeout, clearTimeout, setInterval, clearInterval } from "host://time";
+
 export default async () => {
   // setTimeout with cancellation
   const id = setTimeout(() => console.log("fired"), 1000);
@@ -197,7 +201,8 @@ export default async () => {
 Re-run scenarios when referenced files change:
 
 ```typescript
-import { scenario, runScenariosWatch, closure, assertThat, is, log } from "funee";
+import { scenario, runScenariosWatch, closure, assertThat, is } from "funee";
+import { log } from "host://console";
 import { add } from "./math.ts";
 
 const scenarios = [
@@ -220,8 +225,9 @@ export default async () => {
 ```typescript
 import { 
   assertThat, is, not, both, contains, matches,
-  greaterThan, lessThan, scenario, runScenarios, closure, log 
+  greaterThan, lessThan, scenario, runScenarios, closure
 } from "funee";
+import { log } from "host://console";
 
 const scenarios = [
   scenario({
@@ -280,48 +286,109 @@ export default () => used();
 // Output: only `used` appears
 ```
 
-## Standard Library
+## Import Structure
 
-Import from `"funee"`:
+funee uses a two-layer import system:
+
+### Host Imports (`host://`)
+
+Host-provided runtime capabilities — things that require the native runtime:
+
+```typescript
+// File system
+import { readFile, writeFile, isFile, lstat, readdir, mkdir, tmpdir, tempDir } from "host://fs";
+
+// HTTP client
+import { fetch, httpGetJSON, httpPostJSON } from "host://http";
+
+// HTTP server
+import { serve, createResponse, createJsonResponse } from "host://http/server";
+
+// Subprocess
+import { spawn } from "host://process";
+
+// Timers
+import { setTimeout, clearTimeout, setInterval, clearInterval } from "host://time";
+
+// File watching
+import { watchFile, watchDirectory } from "host://watch";
+
+// Crypto
+import { randomBytes } from "host://crypto";
+
+// Console
+import { log, debug } from "host://console";
+```
+
+### Library Imports (`"funee"`)
+
+Pure JavaScript/TypeScript library code — works anywhere:
 
 ```typescript
 import {
-  // Core
-  log, debug,
-  
-  // Macros
+  // Macros (compile-time)
   Closure, CanonicalName, Definition, createMacro,
   closure, canonicalName, definition,
   
-  // HTTP
-  fetch, serve, createResponse, createJsonResponse,
-  httpGetJSON, httpPostJSON,
-  
-  // Filesystem
-  readFile, writeFile, isFile, lstat, readdir, mkdir,
-  join, tmpdir, tempDir,
-  
-  // Process
-  spawn,
-  
-  // Assertions
+  // Assertions (pure JS)
   assertThat, is, not, both, contains, matches,
   greaterThan, lessThan, greaterThanOrEqual, lessThanOrEqual,
   
-  // Testing
+  // Testing framework
   scenario, runScenarios, runScenariosWatch,
   
-  // Streams
+  // Streams (async iterables)
   fromArray, toArray, map, filter, reduce, pipe,
   fromString, toString, fromBuffer, toBuffer,
   
   // Utilities
   cryptoRandomString, someString, someDirectory,
-  
-  // Watch
-  watchFile, watchDirectory,
+  join, // path joining is pure string manipulation
 } from "funee";
 ```
+
+### Why `host://`?
+
+The `host://` scheme makes host dependencies explicit:
+
+1. **Clear contract** — See exactly what runtime capabilities a module needs
+2. **Portability** — Pure `"funee"` imports work in any JavaScript environment
+3. **Alternative runtimes** — Browser, edge workers, etc. can provide different `host://` implementations
+4. **Testing** — Easy to mock `host://` imports
+5. **Tree-shaking** — Unused host modules aren't loaded
+
+### Migration Guide
+
+Moving from old-style imports to `host://`:
+
+```typescript
+// ❌ Old way (deprecated)
+import { readFile, writeFile } from "funee";
+import { fetch } from "funee";
+import { serve } from "funee";
+import { spawn } from "funee";
+import { log, debug } from "funee";
+
+// ✅ New way
+import { readFile, writeFile } from "host://fs";
+import { fetch } from "host://http";
+import { serve } from "host://http/server";
+import { spawn } from "host://process";
+import { log, debug } from "host://console";
+```
+
+**Quick reference:**
+
+| Old import | New import |
+|------------|------------|
+| `readFile`, `writeFile`, `isFile`, `readdir`, `mkdir`, `tmpdir`, `tempDir` | `host://fs` |
+| `fetch`, `httpGetJSON`, `httpPostJSON` | `host://http` |
+| `serve`, `createResponse`, `createJsonResponse` | `host://http/server` |
+| `spawn` | `host://process` |
+| `setTimeout`, `clearTimeout`, `setInterval`, `clearInterval` | `host://time` |
+| `watchFile`, `watchDirectory` | `host://watch` |
+| `randomBytes` | `host://crypto` |
+| `log`, `debug` | `host://console` |
 
 ## Architecture
 

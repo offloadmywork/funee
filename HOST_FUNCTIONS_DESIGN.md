@@ -219,3 +219,39 @@ export declare function spawn(cmd: string, args?: string[]): Promise<CommandOutp
 1. **Should timers be globals or imports?** — Currently `setTimeout` is a global. Keep as global for compatibility?
 2. **Version in URL?** — `host://fs@1` for future breaking changes?
 3. **Capability detection?** — `import { available } from "host://fs"` to check if host provides it?
+
+## Implementation Notes
+
+### Current Status
+
+The `host://` import scheme is now fully implemented:
+
+1. **Bundler recognizes `host://` URLs** — Handled in `load_module.rs`
+2. **Host modules resolve to runtime bootstrap** — Each namespace maps to pre-loaded runtime code
+3. **Backward compatibility preserved** — Old `"funee"` imports still work (re-export from host modules)
+
+### How It Works
+
+1. When the bundler encounters `import { readFile } from "host://fs"`, it recognizes the `host://` scheme
+2. Instead of fetching from network, it resolves to the corresponding host module definition
+3. The host module exports functions that call into Rust ops via deno_core's op system
+4. The runtime bootstrap pre-loads all host module definitions before user code runs
+
+### File Structure
+
+```
+funee-lib/
+  host/
+    fs.ts        # host://fs → re-exports from bootstrap
+    http.ts      # host://http → re-exports from bootstrap
+    server.ts    # host://http/server → re-exports from bootstrap
+    process.ts   # host://process → re-exports from bootstrap
+    time.ts      # host://time → re-exports from bootstrap
+    watch.ts     # host://watch → re-exports from bootstrap
+    crypto.ts    # host://crypto → re-exports from bootstrap
+    console.ts   # host://console → re-exports from bootstrap
+```
+
+### Testing
+
+All `host://` imports are covered by self-hosted tests in `tests/self-hosted/`. These tests use the actual runtime and verify that host functions work correctly.
