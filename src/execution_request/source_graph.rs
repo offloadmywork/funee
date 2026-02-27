@@ -68,10 +68,16 @@ fn is_http_uri(uri: &str) -> bool {
     uri.starts_with("http://") || uri.starts_with("https://")
 }
 
+/// Check if a URI is a host:// URL (built-in host modules)
+fn is_host_uri(uri: &str) -> bool {
+    uri.starts_with("host://")
+}
+
 /// Resolve an import URI against the current module's URI
 /// 
 /// Handles:
 /// - "funee" -> funee-lib path
+/// - "host://*" -> host module URIs (returned as-is)
 /// - HTTP URLs (absolute) -> used as-is
 /// - Relative paths from HTTP URLs -> resolved against base URL
 /// - Absolute paths (/) from HTTP URLs -> resolved against HTTP server root
@@ -84,6 +90,11 @@ fn resolve_import_uri(import_uri: &str, base_uri: &str, funee_lib_path: &Option<
             eprintln!("error: Cannot resolve 'funee' - no funee_lib_path configured");
             std::process::exit(1);
         });
+    }
+
+    // Handle host:// URIs - return as-is
+    if is_host_uri(import_uri) {
+        return import_uri.to_string();
     }
 
     // If import is already an absolute HTTP URL, use it directly
@@ -243,6 +254,18 @@ impl SourceGraph {
                 } else {
                     let mut current_identifier = reference.1.clone();
                     loop {
+                        // Check for host:// URIs - these are built-in host modules
+                        if is_host_uri(&current_identifier.uri) {
+                            let namespace = current_identifier.uri
+                                .strip_prefix("host://")
+                                .unwrap()
+                                .to_string();
+                            break (
+                                Declaration::HostModule(namespace, current_identifier.name.clone()),
+                                current_identifier.uri.clone(),
+                            );
+                        }
+
                         let err_source = source_uri.clone();
                         let err_name = current_identifier.name.clone();
                         let err_module = current_identifier.uri.clone();
@@ -503,5 +526,38 @@ mod tests {
             &None,
         );
         assert_eq!(result, "/home/user/project/src/utils.ts");
+    }
+
+    #[test]
+    fn test_resolve_import_uri_host_scheme() {
+        // host:// URIs should be returned as-is
+        let result = resolve_import_uri(
+            "host://fs",
+            "/home/user/project/main.ts",
+            &None,
+        );
+        assert_eq!(result, "host://fs");
+    }
+
+    #[test]
+    fn test_resolve_import_uri_host_scheme_with_path() {
+        // host:// URIs with paths should be returned as-is
+        let result = resolve_import_uri(
+            "host://http/server",
+            "/home/user/project/main.ts",
+            &None,
+        );
+        assert_eq!(result, "host://http/server");
+    }
+
+    #[test]
+    fn test_is_host_uri() {
+        assert!(is_host_uri("host://fs"));
+        assert!(is_host_uri("host://http/server"));
+        assert!(is_host_uri("host://console"));
+        assert!(!is_host_uri("http://example.com"));
+        assert!(!is_host_uri("https://example.com"));
+        assert!(!is_host_uri("/local/path"));
+        assert!(!is_host_uri("./relative"));
     }
 }

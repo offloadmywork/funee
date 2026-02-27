@@ -24,6 +24,7 @@ pub fn get_references_from_declaration(
         }
         Declaration::FuneeIdentifier(_) => HashSet::new(),
         Declaration::HostFn(_) => HashSet::new(),
+        Declaration::HostModule(_, _) => HashSet::new(),
     }
 }
 
@@ -82,6 +83,7 @@ pub fn rename_references_in_declaration(
         }
         Declaration::FuneeIdentifier(_) => {}
         Declaration::HostFn(_) => {}
+        Declaration::HostModule(_, _) => {}
     };
 }
 

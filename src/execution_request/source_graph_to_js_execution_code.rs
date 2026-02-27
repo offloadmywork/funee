@@ -24,6 +24,14 @@ impl SourceGraph {
         // First, expand all macro calls in the graph
         self.expand_macros();
         
+        // Collect all host modules used in the graph
+        let mut host_namespaces: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for (_, declaration) in self.graph.node_weights() {
+            if let Declaration::HostModule(namespace, _) = declaration {
+                host_namespaces.insert(namespace.clone());
+            }
+        }
+        
         let mut module_items: Vec<ModuleItem> = vec![];
         let mut dfs = DfsPostOrder::new(&self.graph, self.root);
         while let Some(nx) = dfs.next(&self.graph) {
@@ -67,7 +75,11 @@ impl SourceGraph {
         let (mut srcmap, buf) = emit_module(self.source_map.clone(), module);
         let code = String::from_utf8(buf).expect("failed to convert to utf8");
         let srcmap_str = get_inline_source_map(&self.source_map, &mut srcmap);
-        format!("{}{}", code, srcmap_str)
+        
+        // Generate host module preamble if any host modules are used
+        let preamble = generate_host_module_preamble(&host_namespaces);
+        
+        format!("{}{}{}", preamble, code, srcmap_str)
     }
 
     /// Expand all macro calls in the graph before emitting
@@ -353,5 +365,104 @@ impl SourceGraph {
                 None
             }
         }
+    }
+}
+
+/// Generate JavaScript code that defines host module objects
+/// These are inlined in the bundle preamble for modules like host://fs, host://http, etc.
+fn generate_host_module_preamble(namespaces: &std::collections::HashSet<String>) -> String {
+    if namespaces.is_empty() {
+        return String::new();
+    }
+
+    let mut preamble = String::new();
+
+    for namespace in namespaces {
+        let var_name = format!("__host_{}", namespace.replace('/', "_"));
+        let module_code = get_host_module_code(namespace);
+        preamble.push_str(&format!("var {} = {};\n", var_name, module_code));
+    }
+
+    preamble
+}
+
+/// Get the JavaScript object implementation for a host module namespace
+fn get_host_module_code(namespace: &str) -> &'static str {
+    match namespace {
+        "fs" => r#"({
+    readFile: async (path) => Deno.core.ops.op_fsReadFile(path),
+    readFileBinary: async (path) => {
+        const base64 = await Deno.core.ops.op_fsReadFileBinary(path);
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    },
+    writeFile: async (path, content) => Deno.core.ops.op_fsWriteFile(path, content),
+    writeFileBinary: async (path, content) => {
+        let binary = '';
+        for (let i = 0; i < content.length; i++) {
+            binary += String.fromCharCode(content[i]);
+        }
+        const base64 = btoa(binary);
+        return Deno.core.ops.op_fsWriteFileBinary(path, base64);
+    },
+    isFile: async (path) => Deno.core.ops.op_fsIsFile(path),
+    exists: async (path) => Deno.core.ops.op_fsExists(path),
+    lstat: async (path) => JSON.parse(await Deno.core.ops.op_fsLstat(path)),
+    mkdir: async (path, options) => Deno.core.ops.op_fsMkdir(path, options?.recursive ?? false),
+    readdir: async (path) => JSON.parse(await Deno.core.ops.op_fsReaddir(path)),
+    tmpdir: () => Deno.core.ops.op_fsTmpdir()
+})"#,
+
+        "http" => r#"({
+    fetch: globalThis.fetch
+})"#,
+
+        "http/server" => r#"({
+    serve: globalThis.serve,
+    createResponse: (body, init) => new Response(body, init),
+    createJsonResponse: (data, init) => Response.json(data, init)
+})"#,
+
+        "process" => r#"({
+    spawn: globalThis.spawn
+})"#,
+
+        "time" => r#"({
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
+    setInterval: globalThis.setInterval,
+    clearInterval: globalThis.clearInterval
+})"#,
+
+        "watch" => r#"({
+    watchFile: (path) => {
+        throw new Error("watchFile not implemented - use op_watchFile");
+    },
+    watchDirectory: (path, options) => {
+        throw new Error("watchDirectory not implemented - use op_watchDirectory");
+    }
+})"#,
+
+        "crypto" => r#"({
+    randomBytes: (length) => {
+        const hex = Deno.core.ops.op_randomBytes(length);
+        const bytes = new Uint8Array(length);
+        for (let i = 0; i < length; i++) {
+            bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+        }
+        return bytes;
+    }
+})"#,
+
+        "console" => r#"({
+    log: (...args) => console.log(...args),
+    debug: (...args) => console.debug(...args)
+})"#,
+
+        _ => r#"({})"#,
     }
 }

@@ -21,6 +21,9 @@ pub enum Declaration {
     ClosureValue(Closure),
     FuneeIdentifier(FuneeIdentifier),
     HostFn(String),
+    /// Host module export (namespace, export_name)
+    /// e.g., ("fs", "readFile") for `import { readFile } from "host://fs"`
+    HostModule(String, String),
 }
 
 fn ident(name: &str) -> Ident {
@@ -154,6 +157,27 @@ impl Declaration {
                         return_type: None,
                     }),
                 }))
+            }
+            Declaration::HostModule(namespace, export_name) => {
+                // Generate: var name = __host_namespace.export_name;
+                // The __host_* objects are defined in the bundle preamble
+                let host_obj_name = format!("__host_{}", namespace.replace('/', "_"));
+                Stmt::Decl(Decl::Var(Box::new(VarDecl {
+                    span: Default::default(),
+                    ctxt: SyntaxContext::empty(),
+                    kind: VarDeclKind::Var,
+                    declare: false,
+                    decls: vec![VarDeclarator {
+                        span: Default::default(),
+                        name: Pat::Ident(ident(&name).into()),
+                        init: Some(Box::new(Expr::Member(MemberExpr {
+                            span: Default::default(),
+                            obj: Box::new(Expr::Ident(ident(&host_obj_name))),
+                            prop: MemberProp::Ident(ident_name(&export_name)),
+                        }))),
+                        definite: false,
+                    }],
+                })))
             }
         })
     }

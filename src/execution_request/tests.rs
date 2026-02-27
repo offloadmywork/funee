@@ -321,3 +321,101 @@ export const closure = createMacro(<T>(input: T) => {
     
     println!("\n✅ Step 2 implementation working: macro call arguments are captured as Closures!");
 }
+
+#[test]
+fn test_host_module_imports() {
+    use crate::execution_request::declaration::Declaration;
+    use crate::execution_request::source_graph::{LoadParams, SourceGraph};
+    use std::collections::HashSet;
+    use swc_common::SyntaxContext;
+
+    // Create file content that imports from host://
+    // Note: Only used imports will be included in the source graph (demand-driven)
+    // Note: fetch and console are JS globals, so they work without explicit import
+    let file_loader = Box::new(MockFileLoader {
+        files: HashMap::from([(
+            "/test/entry.ts".to_string(),
+            r#"
+import { readFile, writeFile } from "host://fs";
+import { log } from "host://console";
+import { serve } from "host://http/server";
+
+export default async function() {
+    log("Starting...");
+    const content = await readFile("/tmp/test.txt");
+    await writeFile("/tmp/output.txt", content);
+    serve({ port: 8080, handler: () => new Response("ok") });
+}
+            "#
+            .to_string(),
+        )]),
+    });
+
+    // Build the source graph
+    let source_graph = SourceGraph::load(LoadParams {
+        scope: "/test/entry.ts".to_string(),
+        expression: ast::Expr::Call(CallExpr {
+            span: Default::default(),
+            ctxt: SyntaxContext::empty(),
+            callee: Callee::Expr(Box::new(ast::Expr::Ident(ident("default")))),
+            type_args: None,
+            args: vec![],
+        }),
+        host_functions: HashSet::new(),
+        funee_lib_path: None,
+        file_loader,
+    });
+
+    // Find all HostModule declarations
+    let mut host_modules: Vec<(String, String)> = vec![];
+    for node_idx in source_graph.graph.node_indices() {
+        let (_uri, declaration) = &source_graph.graph[node_idx];
+        if let Declaration::HostModule(namespace, export_name) = declaration {
+            host_modules.push((namespace.clone(), export_name.clone()));
+        }
+    }
+
+    // Verify expected host modules (only used ones are included)
+    // Note: fetch is in the JS globals list, so it's available without import
+    assert!(
+        host_modules.iter().any(|(ns, name)| ns == "fs" && name == "readFile"),
+        "Expected HostModule(fs, readFile). Found: {:?}", host_modules
+    );
+    assert!(
+        host_modules.iter().any(|(ns, name)| ns == "fs" && name == "writeFile"),
+        "Expected HostModule(fs, writeFile). Found: {:?}", host_modules
+    );
+    assert!(
+        host_modules.iter().any(|(ns, name)| ns == "console" && name == "log"),
+        "Expected HostModule(console, log). Found: {:?}", host_modules
+    );
+    // fetch is a JS global, so importing from host://http doesn't create a HostModule
+    // (the global takes precedence). Users can use fetch() directly.
+    assert!(
+        host_modules.iter().any(|(ns, name)| ns == "http/server" && name == "serve"),
+        "Expected HostModule(http/server, serve). Found: {:?}", host_modules
+    );
+
+    println!("✅ Host module imports are resolved correctly!");
+    println!("   Found modules: {:?}", host_modules);
+
+    // Generate the execution code and verify the preamble is included
+    let code = source_graph.into_js_execution_code();
+    
+    // Check that host module preambles are present
+    assert!(
+        code.contains("__host_fs"),
+        "Expected __host_fs in generated code. Code: {}", &code[..1000.min(code.len())]
+    );
+    assert!(
+        code.contains("__host_console"),
+        "Expected __host_console in generated code. Code: {}", &code[..1000.min(code.len())]
+    );
+    assert!(
+        code.contains("__host_http_server"),
+        "Expected __host_http_server in generated code (http/server -> http_server). Code: {}", &code[..1000.min(code.len())]
+    );
+
+    println!("✅ Host module preambles are generated correctly!");
+    println!("\nGenerated code preview:\n{}", &code[..500.min(code.len())]);
+}
