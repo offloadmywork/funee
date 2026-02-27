@@ -220,30 +220,24 @@ export default async () => {
 ```typescript
 import { 
   assertThat, is, not, both, contains, matches,
-  greaterThan, lessThan, scenario, runScenarios, log 
+  greaterThan, lessThan, scenario, runScenarios, closure, log 
 } from "funee";
 
 const scenarios = [
   scenario({
     description: "string assertions",
-    verify: {
-      expression: async () => {
-        await assertThat("hello world", contains("world"));
-        await assertThat("test@example.com", matches(/^[\w]+@[\w]+\.\w+$/));
-      },
-      references: new Map(),
-    },
+    verify: closure(async () => {
+      await assertThat("hello world", contains("world"));
+      await assertThat("test@example.com", matches(/^[\w]+@[\w]+\.\w+$/));
+    }),
   }),
   scenario({
     description: "numeric comparisons",
-    verify: {
-      expression: async () => {
-        await assertThat(10, greaterThan(5));
-        await assertThat(3, lessThan(10));
-        await assertThat(42, both(greaterThan(0), lessThan(100)));
-      },
-      references: new Map(),
-    },
+    verify: closure(async () => {
+      await assertThat(10, greaterThan(5));
+      await assertThat(3, lessThan(10));
+      await assertThat(42, both(greaterThan(0), lessThan(100)));
+    }),
   }),
 ];
 
