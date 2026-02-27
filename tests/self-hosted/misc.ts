@@ -28,6 +28,8 @@ import {
   watchDirectory,
 } from "funee";
 
+const FUNEE = "./target/release/funee";
+
 // ============================================================================
 // SUBPROCESS SCENARIOS
 // ============================================================================
@@ -292,7 +294,8 @@ const timerScenarios = [
 const macroScenarios = [
   // Closure constructor accepts plain objects
   scenario({
-    description: "macro :: Closure constructor converts plain objects to Map",
+    description:
+      "macro :: [SPEC-MACRO-RUNTIME-001] Closure constructor converts plain objects to Map",
     verify: {
       expression: async () => {
         const c = Closure({
@@ -310,7 +313,8 @@ const macroScenarios = [
 
   // Closure constructor accepts Map
   scenario({
-    description: "macro :: Closure constructor accepts Map references",
+    description:
+      "macro :: [SPEC-MACRO-RUNTIME-002] Closure constructor accepts Map references",
     verify: {
       expression: async () => {
         const refsMap = new Map([
@@ -332,7 +336,8 @@ const macroScenarios = [
 
   // CanonicalName type structure
   scenario({
-    description: "macro :: CanonicalName has uri and name properties",
+    description:
+      "macro :: [SPEC-MACRO-RUNTIME-003] CanonicalName has uri and name properties",
     verify: {
       expression: async () => {
         // CanonicalName is a structural type { uri, name }
@@ -351,7 +356,8 @@ const macroScenarios = [
 
   // Definition type structure
   scenario({
-    description: "macro :: Definition has declaration and references",
+    description:
+      "macro :: [SPEC-MACRO-RUNTIME-004] Definition has declaration and references",
     verify: {
       expression: async () => {
         const def = Definition({
@@ -368,10 +374,13 @@ const macroScenarios = [
 
   // Test actual closure macro expansion via fixture
   scenario({
-    description: "macro :: closure macro expands to AST at compile time",
+    description:
+      "macro :: [SPEC-MACRO-EXPANSION-001] closure macro expands to AST at compile time",
     verify: {
       expression: async () => {
-        const result = await spawn("./target/release/funee", ["tests/fixtures/macro/closure-macro.ts"]);
+        const result = await spawn(FUNEE, [
+          "tests/fixtures/macro/closure-macro.ts",
+        ]);
         await assertThat(result.status.code, is(0));
         await assertThat(result.stdoutText(), contains("type: object"));
         await assertThat(result.stdoutText(), contains("AST type: ArrowFunctionExpression"));
@@ -382,11 +391,160 @@ const macroScenarios = [
 
   // Test macro with cross-file references
   scenario({
-    description: "macro :: closure captures cross-file references",
+    description:
+      "macro :: [SPEC-MACRO-REFERENCES-001] closure captures cross-file references",
     verify: {
       expression: async () => {
-        const result = await spawn("./target/release/funee", ["tests/fixtures/macro/cross-file-ref/entry.ts"]);
+        const result = await spawn(FUNEE, [
+          "tests/fixtures/macro/cross-file-ref/entry.ts",
+        ]);
         await assertThat(result.status.code, is(0));
+        await assertThat(result.stdoutText(), contains("has 'add' reference: true"));
+      },
+      references: new Map(),
+    } as Closure<() => Promise<unknown>>,
+  }),
+
+  // Conditional macro expansion
+  scenario({
+    description:
+      "macro :: [SPEC-MACRO-EXEC-001] conditional macro branches on expression shape",
+    verify: {
+      expression: async () => {
+        const first = await spawn(FUNEE, [
+          "tests/fixtures/macro/conditional_macro.ts",
+        ]);
+        await assertThat(first.status.code, is(0));
+        await assertThat(first.stdoutText(), contains("conditional:result=10"));
+
+        const second = await spawn(FUNEE, [
+          "tests/fixtures/macro/conditional_macro_already_multiplied.ts",
+        ]);
+        await assertThat(second.status.code, is(0));
+        await assertThat(
+          second.stdoutText(),
+          contains("conditional_already_multiplied:result=10")
+        );
+      },
+      references: new Map(),
+    } as Closure<() => Promise<unknown>>,
+  }),
+
+  // Introspection over captured expression
+  scenario({
+    description:
+      "macro :: [SPEC-MACRO-EXEC-002] macro can inspect arg.expression",
+    verify: {
+      expression: async () => {
+        const result = await spawn(FUNEE, [
+          "tests/fixtures/macro/introspection_macro.ts",
+        ]);
+        await assertThat(result.status.code, is(0));
+        await assertThat(
+          result.stdoutText(),
+          contains("introspection:type=BinaryExpression")
+        );
+      },
+      references: new Map(),
+    } as Closure<() => Promise<unknown>>,
+  }),
+
+  // Two-argument macro behavior
+  scenario({
+    description:
+      "macro :: [SPEC-MACRO-EXEC-003] two-argument macro receives both Closure arguments",
+    verify: {
+      expression: async () => {
+        const result = await spawn(FUNEE, [
+          "tests/fixtures/macro/multi_arg_compare.ts",
+        ]);
+        await assertThat(result.status.code, is(0));
+        await assertThat(result.stdoutText(), contains("multiarg:result=1"));
+      },
+      references: new Map(),
+    } as Closure<() => Promise<unknown>>,
+  }),
+
+  // Variadic macro behavior
+  scenario({
+    description:
+      "macro :: [SPEC-MACRO-EXEC-004] variadic macros receive all arguments",
+    verify: {
+      expression: async () => {
+        const result = await spawn(FUNEE, [
+          "tests/fixtures/macro/variadic_numeric_count.ts",
+        ]);
+        await assertThat(result.status.code, is(0));
+        await assertThat(result.stdoutText(), contains("variadic:count=2"));
+      },
+      references: new Map(),
+    } as Closure<() => Promise<unknown>>,
+  }),
+
+  // References-map introspection
+  scenario({
+    description:
+      "macro :: [SPEC-MACRO-REFERENCES-002] macro can inspect arg.references",
+    verify: {
+      expression: async () => {
+        const result = await spawn(FUNEE, [
+          "tests/fixtures/macro/references_introspection.ts",
+        ]);
+        await assertThat(result.status.code, is(0));
+        await assertThat(
+          result.stdoutText(),
+          contains("references:has_someFunc=1")
+        );
+      },
+      references: new Map(),
+    } as Closure<() => Promise<unknown>>,
+  }),
+
+  // Object/Array/Member transformations from macro output
+  scenario({
+    description:
+      "macro :: [SPEC-MACRO-EXEC-005] macro output can construct object/array/member expressions",
+    verify: {
+      expression: async () => {
+        const objectResult = await spawn(FUNEE, [
+          "tests/fixtures/macro/object_macro.ts",
+        ]);
+        await assertThat(objectResult.status.code, is(0));
+        await assertThat(objectResult.stdoutText(), contains("object:name=test"));
+        await assertThat(objectResult.stdoutText(), contains("object:value=42"));
+
+        const arrayResult = await spawn(FUNEE, [
+          "tests/fixtures/macro/array_macro.ts",
+        ]);
+        await assertThat(arrayResult.status.code, is(0));
+        await assertThat(arrayResult.stdoutText(), contains("array:first=1"));
+        await assertThat(arrayResult.stdoutText(), contains("array:third=3"));
+
+        const memberResult = await spawn(FUNEE, [
+          "tests/fixtures/macro/member_macro.ts",
+        ]);
+        await assertThat(memberResult.status.code, is(0));
+        await assertThat(memberResult.stdoutText(), contains("member:value=42"));
+      },
+      references: new Map(),
+    } as Closure<() => Promise<unknown>>,
+  }),
+
+  // Sequence-expression style debug macro
+  scenario({
+    description:
+      "macro :: [SPEC-MACRO-EXEC-006] macro output supports sequence-expression evaluation",
+    verify: {
+      expression: async () => {
+        const result = await spawn(FUNEE, [
+          "tests/fixtures/macro/debug_sequence_macro.ts",
+        ]);
+        await assertThat(result.status.code, is(0));
+        await assertThat(
+          result.stdoutText(),
+          contains("[DEBUG] Expression type: BinaryExpression")
+        );
+        await assertThat(result.stdoutText(), contains("debug:result=15"));
       },
       references: new Map(),
     } as Closure<() => Promise<unknown>>,
