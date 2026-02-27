@@ -2,7 +2,7 @@
  * Host HTTP Server Module
  * 
  * Provides HTTP server functionality.
- * Import from "host://server"
+ * Import from "host://http/server"
  */
 
 /**
@@ -15,11 +15,9 @@ export type RequestHandler = (request: Request) => Response | Promise<Response>;
  */
 export interface ServeOptions {
   /** Port to listen on. Use 0 for random available port. */
-  port?: number;
+  port: number;
   /** Hostname to bind to. Default: "127.0.0.1" */
   hostname?: string;
-  /** Request handler function */
-  handler: RequestHandler;
   /** Called when server starts listening */
   onListen?: (info: { port: number; hostname: string }) => void;
   /** Called when handler throws an error */
@@ -43,20 +41,19 @@ export interface Server {
 /**
  * Create an HTTP server
  * 
- * @param options - Server options including port, handler, and callbacks
+ * @param options - Server options including port and callbacks
+ * @param handler - Request handler function
  * @returns Server handle with shutdown method
  * 
  * @example
  * ```typescript
- * import { serve } from "host://server";
+ * import { serve } from "host://http/server";
  * 
- * await using server = serve({
- *   port: 3000,
- *   handler: (req) => new Response("Hello, World!"),
- * });
+ * const server = serve({ port: 3000 }, (req) => new Response("Hello, World!"));
+ * await server.shutdown();
  * ```
  */
-export declare function serve(options: ServeOptions): Server;
+export declare function serve(options: ServeOptions, handler: RequestHandler): Server;
 
 /**
  * Create a Response with optional body and init

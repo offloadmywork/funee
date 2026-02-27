@@ -17,9 +17,8 @@
  */
 
 import { HttpTarget, targetToURL } from "./HttpTarget.ts";
-import { HttpResponse, parseHttpResponse } from "./httpFetch.ts";
-// Import httpFetch from "funee" so it's recognized as a host function
-import { httpFetch } from "funee";
+import { HttpResponse } from "./httpFetch.ts";
+import { fetch } from "host://http";
 
 /**
  * HTTP methods supported by httpRequest.
@@ -69,14 +68,23 @@ export const httpRequest = async (
   const { method, target, headers: customHeaders, body: requestBody } = options;
   const url = targetToURL(target);
   const headers = customHeaders ?? {};
-  const body = requestBody ?? "";
+  const body = requestBody ?? null;
 
-  const responseJson = await httpFetch(
+  const response = await fetch(url, {
     method,
-    url,
-    JSON.stringify(headers),
-    body
-  );
+    headers,
+    body: body || undefined,
+  });
 
-  return parseHttpResponse(responseJson);
+  // Convert Response to HttpResponse format for backwards compatibility
+  const responseHeaders: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    responseHeaders[key] = value;
+  });
+
+  return {
+    status: response.status,
+    headers: responseHeaders,
+    body: await response.text(),
+  };
 };

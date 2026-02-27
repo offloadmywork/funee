@@ -155,8 +155,9 @@ declare global {
   function fetch(input: string | URL | Request, init?: RequestInit): Promise<Response>;
 }
 
-// Re-export the global fetch for explicit imports
-export const fetch = globalThis.fetch;
+// Import fetch from host://http for explicit imports
+import { fetch as hostFetch } from "host://http";
+export const fetch = hostFetch;
 
 // ============================================================================
 // Factory function aliases (for funee-style API)

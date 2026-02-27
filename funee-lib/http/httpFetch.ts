@@ -1,19 +1,12 @@
 /**
- * httpFetch - Low-level host function for HTTP requests
+ * httpFetch - Low-level HTTP response types
  *
- * This is the raw host function provided by the funee runtime.
  * For most use cases, prefer the higher-level httpRequest, httpGetJSON,
- * or httpPostJSON functions.
- *
- * The httpFetch function is exported from "funee" (via host.ts).
- * This module re-exports the type and provides helper functions.
+ * or httpPostJSON functions, or use the standard fetch API from "host://http".
  */
 
-// Re-export httpFetch from the main funee module (it's a host function)
-export { httpFetch } from "../host.ts";
-
 /**
- * Parsed HTTP response from httpFetch.
+ * Parsed HTTP response from httpRequest.
  */
 export interface HttpResponse {
   /** HTTP status code */
@@ -25,9 +18,11 @@ export interface HttpResponse {
 }
 
 /**
- * Parse the JSON response from httpFetch.
+ * Parse a JSON string to HttpResponse.
+ * 
+ * @deprecated This is for backwards compatibility. Use fetch from "host://http" instead.
  *
- * @param jsonResponse - The JSON string from httpFetch
+ * @param jsonResponse - The JSON string to parse
  * @returns Parsed HttpResponse object
  */
 export const parseHttpResponse = (json: string): HttpResponse => {

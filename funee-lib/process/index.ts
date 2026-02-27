@@ -25,16 +25,11 @@
  * ```
  */
 
+import { spawn as hostSpawn } from "host://process";
 import type { SpawnOptions, ProcessStatus, CommandOutput, Process, Signal } from "./types.ts";
 
 // Re-export types
 export type { SpawnOptions, ProcessStatus, CommandOutput, Process, Signal } from "./types.ts";
-
-// Declare the global spawn function (provided by runtime bootstrap)
-declare global {
-  function spawn(command: string, args?: string[]): Promise<CommandOutput>;
-  function spawn(options: SpawnOptions): Process;
-}
 
 /**
  * Spawn a subprocess.
@@ -67,4 +62,4 @@ declare global {
  * console.log(filtered.stdoutText());  // "ERROR: something bad\n"
  * ```
  */
-export const spawn = globalThis.spawn;
+export const spawn = hostSpawn;

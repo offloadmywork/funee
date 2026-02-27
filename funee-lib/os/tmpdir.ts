@@ -1,4 +1,4 @@
-import { tmpdir as tmpdirHost } from "funee";
+import { tmpdir as hostTmpdir } from "host://fs";
 import type { AbsolutePathString } from "../filesystem/index.ts";
 
 /**
@@ -15,5 +15,5 @@ import type { AbsolutePathString } from "../filesystem/index.ts";
  * ```
  */
 export const tmpdir = (): AbsolutePathString => {
-  return tmpdirHost() as AbsolutePathString;
+  return hostTmpdir() as AbsolutePathString;
 };

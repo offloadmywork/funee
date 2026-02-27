@@ -390,31 +390,16 @@ fn generate_host_module_preamble(namespaces: &std::collections::HashSet<String>)
 fn get_host_module_code(namespace: &str) -> &'static str {
     match namespace {
         "fs" => r#"({
-    readFile: async (path) => Deno.core.ops.op_fsReadFile(path),
-    readFileBinary: async (path) => {
-        const base64 = await Deno.core.ops.op_fsReadFileBinary(path);
-        const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-            bytes[i] = binary.charCodeAt(i);
-        }
-        return bytes;
-    },
-    writeFile: async (path, content) => Deno.core.ops.op_fsWriteFile(path, content),
-    writeFileBinary: async (path, content) => {
-        let binary = '';
-        for (let i = 0; i < content.length; i++) {
-            binary += String.fromCharCode(content[i]);
-        }
-        const base64 = btoa(binary);
-        return Deno.core.ops.op_fsWriteFileBinary(path, base64);
-    },
-    isFile: async (path) => Deno.core.ops.op_fsIsFile(path),
-    exists: async (path) => Deno.core.ops.op_fsExists(path),
-    lstat: async (path) => JSON.parse(await Deno.core.ops.op_fsLstat(path)),
-    mkdir: async (path, options) => Deno.core.ops.op_fsMkdir(path, options?.recursive ?? false),
-    readdir: async (path) => JSON.parse(await Deno.core.ops.op_fsReaddir(path)),
-    tmpdir: () => Deno.core.ops.op_fsTmpdir()
+    readFile: (path) => Deno.core.ops.op_fsReadFile(path),
+    readFileBinary: (path) => Deno.core.ops.op_fsReadFileBinary(path),
+    writeFile: (path, content) => Deno.core.ops.op_fsWriteFile(path, content),
+    writeFileBinary: (path, contentBase64) => Deno.core.ops.op_fsWriteFileBinary(path, contentBase64),
+    isFile: (path) => Deno.core.ops.op_fsIsFile(path),
+    exists: (path) => Deno.core.ops.op_fsExists(path),
+    lstat: (path) => Deno.core.ops.op_fsLstat(path),
+    mkdir: (path, recursive) => Deno.core.ops.op_fsMkdir(path, recursive ?? false),
+    readdir: (path) => Deno.core.ops.op_fsReaddir(path),
+    tmpdir: () => Deno.core.ops.op_tmpdir()
 })"#,
 
         "http" => r#"({
@@ -439,12 +424,9 @@ fn get_host_module_code(namespace: &str) -> &'static str {
 })"#,
 
         "watch" => r#"({
-    watchFile: (path) => {
-        throw new Error("watchFile not implemented - use op_watchFile");
-    },
-    watchDirectory: (path, options) => {
-        throw new Error("watchDirectory not implemented - use op_watchDirectory");
-    }
+    watchStart: (path, recursive) => Deno.core.ops.op_watchStart(path, recursive),
+    watchPoll: (watcherId) => Deno.core.ops.op_watchPoll(watcherId),
+    watchStop: (watcherId) => Deno.core.ops.op_watchStop(watcherId)
 })"#,
 
         "crypto" => r#"({

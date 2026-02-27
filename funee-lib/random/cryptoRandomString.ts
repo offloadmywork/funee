@@ -1,4 +1,4 @@
-import { randomBytes } from "funee";
+import { randomBytes } from "host://crypto";
 
 /**
  * Generate a cryptographically secure random string of the specified length.
@@ -18,9 +18,9 @@ import { randomBytes } from "funee";
  * ```
  */
 export const cryptoRandomString = (desiredLength: number): string => {
-  // randomBytes returns hex string of 2*n chars for n bytes
-  // So for a string of desiredLength hex chars, we need ceil(desiredLength/2) bytes
+  // randomBytes returns Uint8Array, convert to hex string
   const bytesNeeded = Math.ceil(desiredLength / 2);
-  const hex = randomBytes(bytesNeeded);
+  const bytes = randomBytes(bytesNeeded);
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
   return hex.slice(0, desiredLength);
 };

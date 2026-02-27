@@ -5,8 +5,7 @@
  * Uses the notify crate on the Rust side for cross-platform support.
  */
 
-// Import from "funee" to ensure host functions are properly resolved
-import { watchStart, watchPoll, watchStop } from "funee";
+import { watchStart, watchPoll, watchStop } from "host://watch";
 
 /**
  * Event kinds emitted by watchers

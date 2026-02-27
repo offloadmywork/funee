@@ -2,7 +2,7 @@
  * Write binary data (Uint8Array) to a file
  */
 
-import { fsWriteFileBinary } from "../host.ts";
+import { writeFileBinary as hostWriteFileBinary } from "host://fs";
 import type { FilePathString, FsResult } from "./index.ts";
 import { parseResult, unwrap } from "./FsResult.ts";
 import { base64Encode } from "./readFileBinary.ts";
@@ -21,7 +21,7 @@ import { base64Encode } from "./readFileBinary.ts";
  */
 export const writeFileBinaryRaw = (path: FilePathString, data: Uint8Array): FsResult<void> => {
   const base64 = base64Encode(data);
-  const json = fsWriteFileBinary(path, base64);
+  const json = hostWriteFileBinary(path, base64);
   return parseResult<void>(json);
 };
 

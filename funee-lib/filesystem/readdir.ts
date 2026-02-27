@@ -2,7 +2,7 @@
  * readdir - List directory contents
  */
 
-import { fsReaddir } from "funee";
+import { readdir as hostReaddir } from "host://fs";
 import { FolderPathString, PathString, RelativePathString } from "./PathString.ts";
 import { parseResult, unwrap, FsResult } from "./FsResult.ts";
 
@@ -15,7 +15,7 @@ import { parseResult, unwrap, FsResult } from "./FsResult.ts";
  * @returns Result object with array of filenames or error
  */
 export const readdirRaw = (path: PathString): FsResult<string[]> => {
-  const json = fsReaddir(path);
+  const json = hostReaddir(path);
   return parseResult(json) as FsResult<string[]>;
 };
 

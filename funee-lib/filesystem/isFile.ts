@@ -2,7 +2,7 @@
  * isFile - Check if a path is a file
  */
 
-import { fsIsFile } from "funee";
+import { isFile as hostIsFile } from "host://fs";
 import { PathString } from "./PathString.ts";
 
 /**
@@ -21,5 +21,5 @@ import { PathString } from "./PathString.ts";
  * ```
  */
 export const isFile = (path: PathString): boolean => {
-  return fsIsFile(path);
+  return hostIsFile(path);
 };

@@ -17,7 +17,9 @@
  * ```
  */
 
-import { someDirectory, fsMkdir, spawn } from "funee";
+import { mkdir } from "host://fs";
+import { spawn } from "host://process";
+import { someDirectory } from "../abstracts/index.ts";
 import type { FolderPathString } from "./PathString.ts";
 
 /**
@@ -58,10 +60,7 @@ export const tempDir = (): TempDir => {
   const path = someDirectory();
   
   // Create the directory
-  const result = JSON.parse(fsMkdir(path));
-  if (result.error) {
-    throw new Error(`Failed to create temp directory: ${result.error}`);
-  }
+  mkdir(path);
   
   return {
     get path() {

@@ -2,7 +2,7 @@
  * lstat - Get file stats without following symlinks
  */
 
-import { fsLstat } from "funee";
+import { lstat as hostLstat } from "host://fs";
 import { PathString } from "./PathString.ts";
 import { parseResult, unwrap, FsResult, FileStats } from "./FsResult.ts";
 
@@ -15,7 +15,7 @@ import { parseResult, unwrap, FsResult, FileStats } from "./FsResult.ts";
  * @returns Result object with stats or error
  */
 export const lstatRaw = (path: PathString): FsResult<FileStats> => {
-  const json = fsLstat(path);
+  const json = hostLstat(path);
   return parseResult(json) as FsResult<FileStats>;
 };
 

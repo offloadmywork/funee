@@ -2,7 +2,7 @@
  * Read a file as binary data (Uint8Array)
  */
 
-import { fsReadFileBinary } from "../host.ts";
+import { readFileBinary as hostReadFileBinary } from "host://fs";
 import type { FilePathString, FsResult } from "./index.ts";
 import { parseResult, unwrap } from "./FsResult.ts";
 
@@ -73,7 +73,7 @@ export const base64Decode = (base64: string): Uint8Array => {
  * ```
  */
 export const readFileBinaryRaw = (path: FilePathString): FsResult<Uint8Array> => {
-  const json = fsReadFileBinary(path);
+  const json = hostReadFileBinary(path);
   const result = parseResult<string>(json);
   if (result.type === "ok") {
     return { type: "ok", value: base64Decode(result.value) };

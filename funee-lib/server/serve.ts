@@ -18,6 +18,8 @@
  * ```
  */
 
+import { serve as hostServe } from "host://http/server";
+
 /**
  * Request handler function
  */
@@ -51,14 +53,6 @@ export type Server = {
   [Symbol.asyncDispose]: () => Promise<void>;
 };
 
-// Declare the global serve function (provided by runtime bootstrap)
-declare global {
-  function serve(
-    options: ServeOptions,
-    handler: RequestHandler,
-  ): Server;
-}
-
 /**
  * Create an HTTP server
  * 
@@ -77,7 +71,7 @@ declare global {
  * });
  * ```
  */
-export const serve: (
+export const serve = hostServe as (
   options: ServeOptions,
   handler: RequestHandler,
-) => Server = globalThis.serve;
+) => Server;

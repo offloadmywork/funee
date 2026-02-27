@@ -36,29 +36,62 @@ export type {
   MacroResultWithDefinitions
 } from "./core.ts";
 
-// Host functions provided by the runtime
-export {
-  log,
-  debug,
-  randomBytes,
-  httpFetch,
-  // Filesystem host functions (low-level - use the wrappers in filesystem/ instead)
-  fsReadFile,
-  fsReadFileBinary,
-  fsWriteFile,
-  fsWriteFileBinary,
-  fsIsFile,
-  fsLstat,
-  fsReaddir,
-  fsExists,
-  fsMkdir,
-  // OS host functions (low-level - use the wrappers in os/ instead)
-  tmpdir as tmpdirHost,
-  // Watcher host functions (low-level - use the wrappers in watcher/ instead)
-  watchStart,
-  watchPoll,
-  watchStop,
-} from "./host.ts";
+// ============================================================================
+// Host Functions (deprecated - import from host:// instead)
+// ============================================================================
+
+/** @deprecated Import from "host://console" instead */
+export { log } from "host://console";
+
+/** @deprecated Import from "host://console" instead */
+export { debug } from "host://console";
+
+/** @deprecated Import from "host://crypto" instead */
+export { randomBytes } from "host://crypto";
+
+/** @deprecated Import from "host://http" instead (use fetch) */
+export { fetch as httpFetch } from "host://http";
+
+// Filesystem host functions - deprecated, import from "host://fs" instead
+/** @deprecated Import from "host://fs" instead */
+export { readFile as fsReadFile } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { readFileBinary as fsReadFileBinary } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { writeFile as fsWriteFile } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { writeFileBinary as fsWriteFileBinary } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { isFile as fsIsFile } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { lstat as fsLstat } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { readdir as fsReaddir } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { exists as fsExists } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { mkdir as fsMkdir } from "host://fs";
+
+/** @deprecated Import from "host://fs" instead */
+export { tmpdir as tmpdirHost } from "host://fs";
+
+// Watcher host functions - deprecated, import from "host://watch" instead
+/** @deprecated Import from "host://watch" instead */
+export { watchStart } from "host://watch";
+
+/** @deprecated Import from "host://watch" instead */
+export { watchPoll } from "host://watch";
+
+/** @deprecated Import from "host://watch" instead */
+export { watchStop } from "host://watch";
 
 // ============================================================================
 // AST Types

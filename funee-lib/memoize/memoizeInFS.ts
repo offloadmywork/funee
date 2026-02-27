@@ -1,4 +1,4 @@
-import { fsReadFile, fsWriteFile, fsExists, fsMkdir } from "funee";
+import { readFile as hostReadFile, writeFile as hostWriteFile, exists as hostExists, mkdir as hostMkdir } from "host://fs";
 import { parseResult, unwrap, FsResult } from "../filesystem/FsResult.ts";
 
 /**
@@ -43,16 +43,13 @@ export const memoizeInFS = <T extends (...args: any[]) => any>(
     if (!inProgress[hash]) {
       inProgress[hash] = (async () => {
         // Ensure cache directory exists
-        if (!fsExists("./cache")) {
-          const mkdirResult = parseResult(fsMkdir("./cache"));
-          if (mkdirResult.type === "error") {
-            throw new Error(`Failed to create cache directory: ${mkdirResult.error}`);
-          }
+        if (!hostExists("./cache")) {
+          hostMkdir("./cache");
         }
         
         // Check for cached result
-        if (fsExists(cachePath)) {
-          const readResult = parseResult(fsReadFile(cachePath)) as FsResult<string>;
+        if (hostExists(cachePath)) {
+          const readResult = parseResult(hostReadFile(cachePath)) as FsResult<string>;
           if (readResult.type === "ok") {
             const cachedValue = readResult.value;
             if (cachedValue === "undefined") {
@@ -68,7 +65,7 @@ export const memoizeInFS = <T extends (...args: any[]) => any>(
         
         // Write to cache
         const toCache = result === undefined ? "undefined" : JSON.stringify(result);
-        const writeResult = parseResult(fsWriteFile(cachePath, toCache));
+        const writeResult = parseResult(hostWriteFile(cachePath, toCache));
         if (writeResult.type === "error") {
           throw new Error(`Failed to write cache: ${writeResult.error}`);
         }

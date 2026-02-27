@@ -2,7 +2,7 @@
  * writeFile - Write content to a file
  */
 
-import { fsWriteFile } from "funee";
+import { writeFile as hostWriteFile } from "host://fs";
 import { FilePathString, PathString } from "./PathString.ts";
 import { parseResult, unwrap, FsResult } from "./FsResult.ts";
 
@@ -16,7 +16,7 @@ import { parseResult, unwrap, FsResult } from "./FsResult.ts";
  * @returns Result object with null value or error
  */
 export const writeFileRaw = (path: PathString, content: string): FsResult<null> => {
-  const json = fsWriteFile(path, content);
+  const json = hostWriteFile(path, content);
   return parseResult(json) as FsResult<null>;
 };
 

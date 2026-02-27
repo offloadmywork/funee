@@ -2,7 +2,7 @@
  * readFile - Read file contents as a string
  */
 
-import { fsReadFile } from "funee";
+import { readFile as hostReadFile } from "host://fs";
 import { FilePathString, PathString } from "./PathString.ts";
 import { parseResult, unwrap, FsResult } from "./FsResult.ts";
 
@@ -15,7 +15,7 @@ import { parseResult, unwrap, FsResult } from "./FsResult.ts";
  * @returns Result object with value or error
  */
 export const readFileRaw = (path: PathString): FsResult<string> => {
-  const json = fsReadFile(path);
+  const json = hostReadFile(path);
   return parseResult(json) as FsResult<string>;
 };
 
