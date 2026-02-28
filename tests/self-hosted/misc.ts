@@ -27,8 +27,9 @@ import {
   watchFile,
   watchDirectory,
 } from "funee";
+import { FUNEE_SUT_BIN } from "./_sut.ts";
 
-const FUNEE = "./target/release/funee";
+const FUNEE = FUNEE_SUT_BIN;
 
 // ============================================================================
 // SUBPROCESS SCENARIOS

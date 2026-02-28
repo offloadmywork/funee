@@ -2,79 +2,67 @@ import {
   log,
   scenario,
   runScenarios,
-  Closure,
+  closure,
   assertThat,
   is,
   contains,
   spawn,
   greaterThan,
 } from "funee";
+import { FUNEE_SUT_BIN } from "./_sut.ts";
 
-const FUNEE = "./target/release/funee";
+const FUNEE = FUNEE_SUT_BIN;
 
 const scenarios = [
   // ==================== BASIC EXECUTION ====================
 
   scenario({
     description: "basic :: runs hello.ts",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, ["tests/fixtures/hello.ts"]);
         await assertThat(result.status.code, is(0));
         await assertThat(result.stdoutText(), contains("hello from funee"));
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   scenario({
     description: "basic :: runs default export expressions",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, ["tests/fixtures/default-expr.ts"]);
         await assertThat(result.status.code, is(0));
         await assertThat(
           result.stdoutText(),
           contains("default export expression works")
         );
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   scenario({
     description: "basic :: supports multiple host functions",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, ["tests/fixtures/multi-host.ts"]);
         await assertThat(result.status.code, is(0));
         await assertThat(result.stdoutText(), contains("log works"));
         await assertThat(result.stdoutText(), contains("[DEBUG] debug works"));
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   scenario({
     description: "basic :: supports async functions",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, ["tests/fixtures/async.ts"]);
         await assertThat(result.status.code, is(0));
         await assertThat(result.stdoutText(), contains("async start"));
         await assertThat(result.stdoutText(), contains("async helper called"));
         await assertThat(result.stdoutText(), contains("async end"));
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   // ==================== TREE SHAKING ====================
 
   scenario({
     description: "tree shaking :: only includes referenced declarations",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, ["tests/fixtures/treeshake/entry.ts"]);
         await assertThat(result.status.code, is(0));
         await assertThat(result.stdoutText(), contains("used function"));
@@ -89,15 +77,12 @@ const scenarios = [
           stdout.includes("also unused - should NOT appear"),
           is(false)
         );
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   scenario({
     description: "tree shaking :: emitted code does not contain unused declarations",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, [
           "--emit",
           "tests/fixtures/treeshake/entry.ts",
@@ -117,17 +102,14 @@ const scenarios = [
           stdout.includes("also unused - should NOT appear"),
           is(false)
         );
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   // ==================== GLOBALS ====================
 
   scenario({
     description: "globals :: supports JavaScript built-in globals",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, ["tests/fixtures/globals.ts"]);
         await assertThat(result.status.code, is(0));
         await assertThat(result.stdoutText(), contains("Promise.resolve: 42"));
@@ -140,32 +122,26 @@ const scenarios = [
         );
         await assertThat(result.stdoutText(), contains("Math.max: 5"));
         await assertThat(result.stdoutText(), contains("globals test complete"));
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   scenario({
     description: "globals :: tree-shakes but preserves global references in emitted code",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, ["--emit", "tests/fixtures/globals.ts"]);
         await assertThat(result.status.code, is(0));
         // Globals should be referenced directly, not as imports
         await assertThat(result.stdoutText(), contains("Promise"));
         await assertThat(result.stdoutText(), contains("Object"));
         await assertThat(result.stdoutText(), contains("JSON"));
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   // ==================== ERROR HANDLING ====================
 
   scenario({
     description: "error handling :: reports missing import errors",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, [
           "tests/fixtures/errors/missing-import.ts",
         ]);
@@ -173,15 +149,12 @@ const scenarios = [
         await assertThat(result.status.code, greaterThan(0));
         // Should mention what couldn't be found
         await assertThat(result.stderrText(), contains("doesNotExist"));
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 
   scenario({
     description: "error handling :: reports parse errors",
-    verify: {
-      expression: async () => {
+    verify: closure(async () => {
         const result = await spawn(FUNEE, [
           "tests/fixtures/errors/syntax-error.ts",
         ]);
@@ -194,9 +167,7 @@ const scenarios = [
           stderr.includes("error") ||
           stderr.includes("expected");
         await assertThat(hasErrorInfo, is(true));
-      },
-      references: new Map(),
-    } as Closure<() => Promise<unknown>>,
+      }),
   }),
 ];
 

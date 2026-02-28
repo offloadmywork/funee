@@ -23,6 +23,13 @@ cargo build --release
 # Binary at target/release/funee
 ```
 
+```bash
+# Install from GitHub Releases (recommended for stable runner binaries)
+# 1) Download funee-vX.Y.Z-<target>.tar.gz from the Releases page
+# 2) Extract and move bin/funee into your PATH
+# 3) Keep funee-lib/ next to the binary's parent directory
+```
+
 ## Quick Start
 
 ```typescript
@@ -50,12 +57,16 @@ funee --emit main.ts
 
 # Bypass HTTP cache and fetch fresh
 funee --reload main.ts
+
+# Print runtime version
+funee --version
 ```
 
 | Flag | Description |
 |------|-------------|
 | `--emit` | Print bundled JavaScript instead of executing |
 | `--reload` | Bypass HTTP cache, fetch fresh from network |
+| `--version` | Print funee version and exit |
 
 ## Features
 
@@ -409,10 +420,13 @@ The functional-only design (no classes) enables aggressive optimizations and cle
 cd tests && npm test
 
 # Run self-hosted tests (funee testing funee)
-./target/release/funee tests/self-hosted/basic.ts
-./target/release/funee tests/self-hosted/stdlib.ts
-./target/release/funee tests/self-hosted/http.ts
-./target/release/funee tests/self-hosted/misc.ts
+./scripts/prepare-sut.sh
+./scripts/run-self-hosted.sh
+
+# Optional: choose runner and SUT explicitly
+FUNEE_RUNNER_BIN=/usr/local/bin/funee \
+FUNEE_SUT_BIN=$PWD/target/sut/funee \
+./scripts/run-self-hosted.sh
 
 # Run Rust unit tests  
 cargo test
@@ -420,6 +434,8 @@ cargo test
 # Build release
 cargo build --release
 ```
+
+Release workflow details: `docs/RELEASE_PROCESS.md`.
 
 ## Test Status
 

@@ -1220,13 +1220,19 @@ async fn op_serverStop(server_id: u32) -> Result<(), JsErrorBox> {
 
 fn main() -> Result<(), AnyError> {
     let args: Vec<String> = env::args().collect();
+    let show_version = args.contains(&"--version".to_string());
+    if show_version {
+        println!("funee {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
     
     if args.len() < 2 {
-        eprintln!("Usage: funee [--emit] [--reload] <file.ts>");
+        eprintln!("Usage: funee [--emit] [--reload] [--version] <file.ts>");
         eprintln!("");
         eprintln!("Options:");
         eprintln!("  --emit    Print bundled JavaScript instead of executing");
         eprintln!("  --reload  Bypass HTTP cache and fetch fresh from network");
+        eprintln!("  --version Print funee version and exit");
         eprintln!("");
         eprintln!("Runs the default export function from the given TypeScript file.");
         std::process::exit(1);
@@ -1524,6 +1530,16 @@ fn main() -> Result<(), AnyError> {
             // Also check if funee-lib is next to the executable
             let mut path = exe;
             path.pop();
+            path.push("funee-lib");
+            path.push("index.ts");
+            if path.exists() {
+                return Some(path.to_string_lossy().to_string());
+            }
+            // Also check one directory above executable (e.g. <install>/bin/funee and <install>/funee-lib)
+            let mut path = path;
+            path.pop(); // index.ts
+            path.pop(); // funee-lib
+            path.pop(); // exe dir (bin)
             path.push("funee-lib");
             path.push("index.ts");
             if path.exists() {
