@@ -348,8 +348,11 @@ describe('funee CLI', () => {
        * 
        * The Closure should capture both the mult expression AND the multiplier reference.
        */
-      // TODO: Create fixture and implement this test
-      expect(true).toBe(true);  // Placeholder
+      const { stdout, exitCode } = await runFunee(['macro/cross-file-ref/entry.ts']);
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("captured.references is Map: true");
+      expect(stdout).toContain("has 'add' reference: true");
     });
 
     it('expands closure macro at bundle time', async () => {
@@ -375,8 +378,10 @@ describe('funee CLI', () => {
        * When capturing an expression that references external declarations,
        * the Closure should include those in its references map
        */
-      // TODO: Test with expression that has external refs
-      expect(true).toBe(true);
+      const { stdout, exitCode } = await runFunee(['macro/references_introspection.ts']);
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("references:has_someFunc=1");
     });
 
     // ===== STEP 3: MACRO EXECUTION TESTS =====
